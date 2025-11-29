@@ -53,7 +53,7 @@ translations = {
         "error_no_watermark": "No watermark detected or decoding failed.",
         "search_google": "Search on Google Images",
         "search_instruction": "Click the button to open Google Lens, then drag and drop your image there to search.",
-        "footer": "© 2024 AuthPixel | Secure Your Assets",
+        "footer": "© 2025 AuthPixel | Secure Your Assets",
         "lang_button": "한국어"
     },
     "ko": {
@@ -79,7 +79,7 @@ translations = {
         "error_no_watermark": "워터마크가 감지되지 않았거나 해독에 실패했습니다.",
         "search_google": "구글 이미지 검색",
         "search_instruction": "버튼을 클릭하여 구글 렌즈를 열고, 이미지를 드래그 앤 드롭하여 검색하세요.",
-        "footer": "© 2024 AuthPixel | 자산 보호",
+        "footer": "© 2025 AuthPixel | 자산 보호",
         "lang_button": "English"
     }
 }
