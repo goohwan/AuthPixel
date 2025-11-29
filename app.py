@@ -278,3 +278,15 @@ with tab2:
 
 st.markdown("---")
 st.markdown(t["footer"])
+
+with st.sidebar:
+    st.markdown("### 이 서비스가 도움이 되셨나요?")
+    # Buy Me a Coffee 버튼 (이미지와 링크 연결)
+    st.markdown(
+        """
+        <a href="https://www.buymeacoffee.com/goohwan">
+            <img src="https://img.buymeacoffee.com/button-api/?text=커피 한 잔 후원하기&emoji=☕&slug=goohwan&button_colour=FFDD00&font_colour=000000&font_family=Cookie&outline_colour=000000&coffee_colour=ffffff" />
+        </a>
+        """,
+        unsafe_allow_html=True
+    )
