@@ -13,71 +13,138 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# --- Custom CSS for Cyberpunk/Dark Mode ---
+# --- Localization ---
+if 'language' not in st.session_state:
+    st.session_state.language = 'en'
+
+def toggle_language():
+    if st.session_state.language == 'en':
+        st.session_state.language = 'ko'
+    else:
+        st.session_state.language = 'en'
+
+translations = {
+    "en": {
+        "title": "AuthPixel 🔒",
+        "subtitle": "Invisible Watermarking System (Lightweight)",
+        "tab_protect": "🛡️ PROTECT",
+        "tab_verify": "🔍 VERIFY",
+        "header_protect": "Embed Invisible Watermark",
+        "upload_protect": "Upload Image to Protect",
+        "privacy_notice": "This service does not store any of your photos or information.",
+        "watermark_text_label": "Enter Watermark Text (Max 20 chars)",
+        "embed_button": "🔒 Embed Watermark",
+        "warning_no_text": "Please enter watermark text.",
+        "embedding_spinner": "Embedding watermark...",
+        "success_embed": "Watermark embedded successfully!",
+        "download_button": "⬇️ Download Protected Image",
+        "header_verify": "Verify & Decode Watermark",
+        "upload_verify": "Upload Image to Verify",
+        "decode_button": "🔍 Decode Watermark",
+        "decoding_spinner": "Decoding...",
+        "success_decode": "Watermark Detected!",
+        "hidden_message": "## 🕵️ Hidden Message: `{}`",
+        "error_no_watermark": "No watermark detected or decoding failed.",
+        "search_google": "Search on Google Images",
+        "search_instruction": "Click the button to open Google Lens, then drag and drop your image there to search.",
+        "footer": "© 2024 AuthPixel | Secure Your Assets",
+        "lang_button": "한국어"
+    },
+    "ko": {
+        "title": "AuthPixel 🔒",
+        "subtitle": "보이지 않는 워터마크 시스템 (Lightweight)",
+        "tab_protect": "🛡️ 보호하기",
+        "tab_verify": "🔍 검증하기",
+        "header_protect": "보이지 않는 워터마크 삽입",
+        "upload_protect": "보호할 이미지 업로드",
+        "privacy_notice": "이 서비스는 고객님의 사진과 정보를 일체 저장하지 않습니다.",
+        "watermark_text_label": "워터마크 텍스트 입력 (최대 20자)",
+        "embed_button": "🔒 워터마크 삽입",
+        "warning_no_text": "워터마크 텍스트를 입력해주세요.",
+        "embedding_spinner": "워터마크 삽입 중...",
+        "success_embed": "워터마크가 성공적으로 삽입되었습니다!",
+        "download_button": "⬇️ 보호된 이미지 다운로드",
+        "header_verify": "워터마크 검증 및 해독",
+        "upload_verify": "검증할 이미지 업로드",
+        "decode_button": "🔍 워터마크 해독",
+        "decoding_spinner": "해독 중...",
+        "success_decode": "워터마크 감지됨!",
+        "hidden_message": "## 🕵️ 숨겨진 메시지: `{}`",
+        "error_no_watermark": "워터마크가 감지되지 않았거나 해독에 실패했습니다.",
+        "search_google": "구글 이미지 검색",
+        "search_instruction": "버튼을 클릭하여 구글 렌즈를 열고, 이미지를 드래그 앤 드롭하여 검색하세요.",
+        "footer": "© 2024 AuthPixel | 자산 보호",
+        "lang_button": "English"
+    }
+}
+
+t = translations[st.session_state.language]
+
+# --- Custom CSS for Calm Dark Mode ---
 st.markdown("""
 <style>
     /* Global Background */
     .stApp {
-        background-color: #0e0e0e;
-        color: #00ff41;
-        font-family: 'Courier New', Courier, monospace;
+        background-color: #1A1C23; /* Dark Blue-Grey */
+        color: #E0E0E0; /* Off-white */
+        font-family: 'Inter', sans-serif;
     }
     
     /* Headers */
     h1, h2, h3 {
-        color: #00ff41 !important;
-        text-shadow: 0 0 5px #00ff41;
+        color: #FFFFFF !important;
+        font-weight: 600;
     }
     
     /* Buttons */
     .stButton>button {
-        background-color: #000000;
-        color: #00ff41;
-        border: 1px solid #00ff41;
-        border-radius: 0px;
-        box-shadow: 0 0 5px #00ff41;
-        transition: all 0.3s ease;
+        background-color: #2C2F38;
+        color: #FFFFFF;
+        border: 1px solid #4A4D55;
+        border-radius: 8px;
+        transition: all 0.2s ease;
     }
     .stButton>button:hover {
-        background-color: #00ff41;
-        color: #000000;
-        box-shadow: 0 0 15px #00ff41;
+        background-color: #3E424E;
+        border-color: #6C707A;
     }
     
     /* Inputs */
     .stTextInput>div>div>input {
-        background-color: #1a1a1a;
-        color: #00ff41;
-        border: 1px solid #00ff41;
+        background-color: #252830;
+        color: #E0E0E0;
+        border: 1px solid #4A4D55;
+        border-radius: 8px;
     }
     
     /* Tabs */
     .stTabs [data-baseweb="tab-list"] {
-        gap: 10px;
+        gap: 20px;
     }
     .stTabs [data-baseweb="tab"] {
-        background-color: #1a1a1a;
+        background-color: transparent;
         color: #888;
-        border-radius: 0px;
-        border: 1px solid #333;
+        border: none;
+        padding-bottom: 10px;
     }
     .stTabs [aria-selected="true"] {
-        background-color: #000000 !important;
-        color: #00ff41 !important;
-        border: 1px solid #00ff41 !important;
-        box-shadow: 0 0 5px #00ff41;
+        background-color: transparent !important;
+        color: #FFFFFF !important;
+        border-bottom: 2px solid #64B5F6 !important; /* Soft Blue */
     }
     
     /* Success/Error Messages */
     .stSuccess {
-        background-color: rgba(0, 255, 65, 0.1);
-        color: #00ff41;
-        border: 1px solid #00ff41;
+        background-color: rgba(100, 181, 246, 0.1);
+        color: #64B5F6;
+        border: 1px solid #64B5F6;
+        border-radius: 8px;
     }
     .stError {
-        background-color: rgba(255, 0, 0, 0.1);
-        color: #ff0000;
-        border: 1px solid #ff0000;
+        background-color: rgba(239, 83, 80, 0.1);
+        color: #EF5350;
+        border: 1px solid #EF5350;
+        border-radius: 8px;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -120,34 +187,42 @@ def decode_watermark(image):
         return None, str(e)
 
 # --- Main App Layout ---
-st.title("AuthPixel 🔒")
-st.markdown("### Invisible Watermarking System (Lightweight)")
+col1, col2 = st.columns([8, 2])
+with col1:
+    st.title(t["title"])
+with col2:
+    if st.button(t["lang_button"]):
+        toggle_language()
+        st.rerun()
 
-tab1, tab2 = st.tabs(["🛡️ PROTECT", "🔍 VERIFY"])
+st.markdown(f"### {t['subtitle']}")
+
+tab1, tab2 = st.tabs([t["tab_protect"], t["tab_verify"]])
 
 # --- Tab 1: Protect ---
 with tab1:
-    st.header("Embed Invisible Watermark")
+    st.header(t["header_protect"])
     
-    uploaded_file = st.file_uploader("Upload Image to Protect", type=['png', 'jpg', 'jpeg', 'bmp'], key="protect_upload")
+    uploaded_file = st.file_uploader(t["upload_protect"], type=['png', 'jpg', 'jpeg', 'bmp'], key="protect_upload")
+    st.caption(t["privacy_notice"])
     
     if uploaded_file:
         image = Image.open(uploaded_file)
         st.image(image, caption="Original Image", use_column_width=True)
         
-        watermark_text = st.text_input("Enter Watermark Text (Max 20 chars)", max_chars=20)
+        watermark_text = st.text_input(t["watermark_text_label"], max_chars=20)
         
-        if st.button("🔒 Embed Watermark"):
+        if st.button(t["embed_button"]):
             if not watermark_text:
-                st.warning("Please enter watermark text.")
+                st.warning(t["warning_no_text"])
             else:
-                with st.spinner("Embedding watermark..."):
+                with st.spinner(t["embedding_spinner"]):
                     watermarked_img, error = embed_watermark(image, watermark_text)
                     
                 if error:
                     st.error(f"Error: {error}")
                 else:
-                    st.success("Watermark embedded successfully!")
+                    st.success(t["success_embed"])
                     st.image(watermarked_img, caption="Protected Image", use_column_width=True)
                     
                     # Convert to bytes for download
@@ -156,7 +231,7 @@ with tab1:
                     byte_im = buf.getvalue()
                     
                     st.download_button(
-                        label="⬇️ Download Protected Image",
+                        label=t["download_button"],
                         data=byte_im,
                         file_name="protected_image.png",
                         mime="image/png"
@@ -164,25 +239,31 @@ with tab1:
 
 # --- Tab 2: Verify ---
 with tab2:
-    st.header("Verify & Decode Watermark")
+    st.header(t["header_verify"])
     
-    verify_file = st.file_uploader("Upload Image to Verify", type=['png', 'jpg', 'jpeg', 'bmp'], key="verify_upload")
+    verify_file = st.file_uploader(t["upload_verify"], type=['png', 'jpg', 'jpeg', 'bmp'], key="verify_upload")
+    st.caption(t["privacy_notice"])
     
     if verify_file:
         verify_image = Image.open(verify_file)
         st.image(verify_image, caption="Uploaded Image", use_column_width=True)
         
-        if st.button("🔍 Decode Watermark"):
-            with st.spinner("Decoding..."):
+        if st.button(t["decode_button"]):
+            with st.spinner(t["decoding_spinner"]):
                 decoded_text, error = decode_watermark(verify_image)
             
             if decoded_text:
-                st.success("Watermark Detected!")
-                st.markdown(f"## 🕵️ Hidden Message: `{decoded_text}`")
+                st.success(t["success_decode"])
+                st.markdown(t["hidden_message"].format(decoded_text))
             elif error and "No watermark detected" not in error:
                  st.error(f"Error: {error}")
             else:
-                st.error("No watermark detected or decoding failed.")
+                st.error(t["error_no_watermark"])
+        
+        st.markdown("---")
+        st.markdown(f"### {t['search_google']}")
+        st.info(t["search_instruction"])
+        st.link_button(t["search_google"], "https://lens.google.com/")
 
 st.markdown("---")
-st.markdown("© 2024 AuthPixel | Secure Your Assets")
+st.markdown(t["footer"])
