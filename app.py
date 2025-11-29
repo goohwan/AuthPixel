@@ -26,7 +26,7 @@ def toggle_language():
 translations = {
     "en": {
         "title": "AuthPixel 🔒",
-        "subtitle": "Invisible Watermarking System (Lightweight)",
+        "subtitle": "Invisible Watermarking System",
         "tab_protect": "🛡️ PROTECT",
         "tab_verify": "🔍 VERIFY",
         "header_protect": "Embed Invisible Watermark",
