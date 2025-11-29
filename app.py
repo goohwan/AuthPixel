@@ -26,7 +26,7 @@ def toggle_language():
 translations = {
     "en": {
         "title": "AuthPixel 🔒",
-        "subtitle": "Invisible Watermarking System",
+        "subtitle": "Protect your image assets by inserting an invisible watermark.",
         "tab_protect": "🛡️ PROTECT",
         "tab_verify": "🔍 VERIFY",
         "header_protect": "Embed Invisible Watermark",
@@ -52,7 +52,7 @@ translations = {
     },
     "ko": {
         "title": "AuthPixel 🔒",
-        "subtitle": "보이지 않는 워터마크 시스템",
+        "subtitle": "보이지 않는 워터마크를 삽입해서 이미지 자산을 지켜보세요",
         "tab_protect": "🛡️ 보호하기",
         "tab_verify": "🔍 검증하기",
         "header_protect": "보이지 않는 워터마크 삽입",
