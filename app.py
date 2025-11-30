@@ -97,9 +97,28 @@ st.markdown("""
         font-family: 'Inter', sans-serif;
     }
 
-    /* Sidebar Width */
+    /* Sidebar Width and Content Containment */
+    [data-testid="stSidebar"] {
+        width: 350px !important;
+        min-width: 350px !important;
+        max-width: 350px !important;
+    }
+    
     [data-testid="stSidebar"] > div:first-child {
         width: 350px !important;
+        padding: 1rem !important;
+        overflow-x: hidden !important;
+    }
+    
+    /* Ensure sidebar content doesn't overflow */
+    [data-testid="stSidebar"] img {
+        max-width: 100% !important;
+        height: auto !important;
+    }
+    
+    [data-testid="stSidebar"] a {
+        max-width: 100% !important;
+        display: block !important;
     }
 
     /* Move Sidebar Toggle Button to Left Middle */
