@@ -141,6 +141,19 @@ st.markdown("""
         top: 50% !important;
         transform: translateY(-50%) !important;
         z-index: 999999 !important;
+        width: 60px !important;
+        height: 60px !important;
+        background-image: url('buymeacoffee_btn.png') !important;
+        background-size: contain !important;
+        background-repeat: no-repeat !important;
+        background-position: center !important;
+        border: none !important;
+        border-radius: 50% !important;
+    }
+    
+    /* Hide the default icon */
+    [data-testid="collapsedControl"] svg {
+        display: none !important;
     }
     
     /* Headers */
