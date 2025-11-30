@@ -358,7 +358,7 @@ if coffee_btn_src:
             display: none;
             position: fixed;
             left: 50px;
-            top: 4%;
+            top: 3.5%;
             transform: translateY(-50%);
             width: 90px;
             height: 60px;
