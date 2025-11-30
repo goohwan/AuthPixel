@@ -97,16 +97,29 @@ st.markdown("""
         font-family: 'Inter', sans-serif;
     }
 
-    /* Sidebar Width - Fixed at 350px */
+    /* Sidebar Width and Content Containment */
+    [data-testid="stSidebar"] {
+        width: 350px !important;
+        min-width: 350px !important;
+        max-width: 350px !important;
+        overflow: hidden !important;
+    }
+    
+    [data-testid="stSidebar"] > div {
+        width: 350px !important;
+        max-width: 350px !important;
+    }
+    
     [data-testid="stSidebar"] > div:first-child {
         width: 350px !important;
         padding: 1rem !important;
         overflow-x: hidden !important;
+        box-sizing: border-box !important;
     }
     
-    /* When sidebar is collapsed, move it completely off-screen */
-    [data-testid="stSidebar"][aria-hidden="true"] {
-        transform: translateX(-350px) !important;
+    /* Move sidebar completely off-screen when collapsed */
+    [data-testid="stSidebar"][aria-expanded="false"] {
+        margin-left: -350px !important;
     }
     
     /* Ensure sidebar content doesn't overflow */
