@@ -97,10 +97,13 @@ st.markdown("""
         font-family: 'Inter', sans-serif;
     }
 
-    /* Sidebar Width */
+    /* Sidebar Width - Target inner content to allow collapse */
+    [data-testid="stSidebar"] > div:first-child {
+        width: 350px;
+    }
     [data-testid="stSidebar"] {
-        min-width: 350px;
-        max-width: 350px;
+        min-width: unset !important;
+        max-width: unset !important;
     }
     
     /* Headers */
