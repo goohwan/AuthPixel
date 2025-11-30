@@ -357,8 +357,8 @@ if coffee_btn_src:
         .coffee-btn-overlay {{
             display: none;
             position: fixed;
-            left: 80px;
-            top: 2%;
+            left: 50px;
+            top: 4%;
             transform: translateY(-50%);
             width: 90px;
             height: 60px;
