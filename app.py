@@ -97,11 +97,6 @@ st.markdown("""
         font-family: 'Inter', sans-serif;
     }
 
-    /* Hide Sidebar Toggle Button */
-    [data-testid="collapsedControl"] {
-        display: none;
-    }
-
     /* PC Layout: Right Sidebar */
     @media (min-width: 769px) {
         /* Force Sidebar to Right */
