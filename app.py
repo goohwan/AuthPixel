@@ -294,7 +294,7 @@ with st.sidebar:
             <img src="https://img.buymeacoffee.com/button-api/?text=커피한잔<br>후원하기&emoji=☕&slug=goohwan&button_colour=FFDD00&font_colour=000000&font_family=Cookie&outline_colour=000000&coffee_colour=ffffff" />
         </a><br>
         <p style="text-align:center;">
-            <img src="mywalletqr.png" style="width:250px; display:block; margin:15px auto;" title="카메라 앱으로 QR코드를 비춰보세요">제작자 후원하기<br>(커피한잔 사주세요~*)
+            <img src="/mywalletqr.png" style="width:250px; display:block; margin:15px auto;" title="카메라 앱으로 QR코드를 비춰보세요">제작자 후원하기<br>(커피한잔 사주세요~*)
         </p>
         """,
         unsafe_allow_html=True
