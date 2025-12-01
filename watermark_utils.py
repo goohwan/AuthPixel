@@ -4,24 +4,23 @@ import cv2
 class WatermarkEmbedder:
     def __init__(self):
         self.block_size = 8
-        self.Q = 35
-        self.SYNC_CODE = "111000111000" # 12 bits
+        self.Q = 40  # Higher for stronger embedding
+        self.SYNC_CODE = "10101010"  # 8 bits alternating pattern
 
     def embed(self, image, watermark_text):
         """
-        Embeds text into image using Redundant Block-based DCT with SYNC code.
+        Embeds text using Block DCT with simple repetition.
         """
         img_yuv = cv2.cvtColor(image, cv2.COLOR_RGB2YCrCb)
         h, w, _ = img_yuv.shape
         y_channel = img_yuv[:, :, 0].astype(np.float32)
 
-        # Prepare Packet: [SYNC][LEN][MSG]
-        # LEN is 8 bits.
+        # Prepare Packet: [SYNC][MSG]
         binary_msg = ''.join(format(ord(char), '08b') for char in watermark_text)
-        msg_len = len(binary_msg) // 8
-        binary_len = format(msg_len, '08b')
+        # Add terminator
+        binary_msg += '00000000'
         
-        packet = self.SYNC_CODE + binary_len + binary_msg
+        packet = self.SYNC_CODE + binary_msg
         packet_len = len(packet)
 
         h_blocks = h // self.block_size
@@ -70,18 +69,17 @@ class WatermarkEmbedder:
 class WatermarkDecoder:
     def __init__(self):
         self.block_size = 8
-        self.Q = 35
-        self.SYNC_CODE = "111000111000"
+        self.Q = 40
+        self.SYNC_CODE = "10101010"
 
     def decode(self, image):
         img_yuv = cv2.cvtColor(image, cv2.COLOR_RGB2YCrCb)
         y_channel = img_yuv[:, :, 0].astype(np.float32)
         h, w = y_channel.shape
         
-        # Group candidates by length
-        candidates_by_len = {}
-        
         # Grid Search
+        all_extractions = []
+        
         for offset_y in range(self.block_size):
             for offset_x in range(self.block_size):
                 
@@ -109,95 +107,49 @@ class WatermarkDecoder:
                         else:
                             extracted_bits.append('1')
                 
-                if not extracted_bits:
-                    continue
-                    
-                bit_stream = "".join(extracted_bits)
-                
-                # Find SYNC codes
-                import re
-                sync_indices = [m.start() for m in re.finditer(self.SYNC_CODE, bit_stream)]
-                
-                for idx in sync_indices:
-                    # Read Length (next 8 bits)
-                    len_start = idx + len(self.SYNC_CODE)
-                    if len_start + 8 > len(bit_stream):
-                        continue
-                        
-                    len_bits = bit_stream[len_start:len_start+8]
-                    try:
-                        msg_len = int(len_bits, 2)
-                    except:
-                        continue
-                        
-                    if msg_len <= 0 or msg_len > 50: # Sanity check
-                        continue
-                        
-                    # Read Message Bits
-                    msg_start = len_start + 8
-                    msg_end = msg_start + (msg_len * 8)
-                    
-                    if msg_end > len(bit_stream):
-                        continue
-                        
-                    msg_bits = bit_stream[msg_start:msg_end]
-                    
-                    if msg_len not in candidates_by_len:
-                        candidates_by_len[msg_len] = []
-                    candidates_by_len[msg_len].append(msg_bits)
-
-        # Vote
-        best_message = None
-        max_votes = 0
+                if len(extracted_bits) > 0:
+                    all_extractions.append("".join(extracted_bits))
         
-        for length, bit_strings in candidates_by_len.items():
-            # We need a reasonable number of votes to trust this length
-            # But even 1 might be enough if it's the only one.
+        # Try to decode from all extractions
+        candidates = []
+        
+        for bit_stream in all_extractions:
+            # Find SYNC
+            import re
+            sync_matches = [m.start() for m in re.finditer(self.SYNC_CODE, bit_stream)]
             
-            # Bit-wise vote
-            num_bits = length * 8
-            consensus_bits = []
-            
-            for i in range(num_bits):
-                ones = 0
-                zeros = 0
-                for s in bit_strings:
-                    if i < len(s):
-                        if s[i] == '1':
-                            ones += 1
-                        else:
-                            zeros += 1
+            for sync_pos in sync_matches:
+                msg_start = sync_pos + len(self.SYNC_CODE)
                 
-                if ones > zeros:
-                    consensus_bits.append('1')
-                else:
-                    consensus_bits.append('0')
-            
-            consensus_str = "".join(consensus_bits)
-            
-            # Convert to text
-            try:
-                chars = []
-                is_valid = True
-                for k in range(0, len(consensus_str), 8):
-                    byte = consensus_str[k:k+8]
-                    char_code = int(byte, 2)
-                    if 32 <= char_code <= 126:
-                        chars.append(chr(char_code))
-                    else:
-                        is_valid = False
-                        break
-                
-                if is_valid:
-                    decoded_msg = "".join(chars)
-                    # Heuristic: Prefer result supported by more packets
-                    if len(bit_strings) > max_votes:
-                        max_votes = len(bit_strings)
-                        best_message = decoded_msg
-            except:
-                pass
+                # Read until we hit terminator or run out
+                for end in range(msg_start + 8, min(len(bit_stream), msg_start + 200), 8):
+                    chunk = bit_stream[msg_start:end]
+                    
+                    # Check for terminator
+                    if chunk.endswith('00000000'):
+                        msg_bits = chunk[:-8]
+                        
+                        # Convert to text
+                        try:
+                            chars = []
+                            for k in range(0, len(msg_bits), 8):
+                                byte = msg_bits[k:k+8]
+                                char_code = int(byte, 2)
+                                if 32 <= char_code <= 126:
+                                    chars.append(chr(char_code))
+                                else:
+                                    break
+                            
+                            if len(chars) > 0:
+                                candidates.append("".join(chars))
+                                break
+                        except:
+                            pass
 
-        if best_message:
-            return best_message, None
+        if candidates:
+            # Return most common
+            from collections import Counter
+            most_common = Counter(candidates).most_common(1)
+            return most_common[0][0], None
         else:
             return None, "No watermark detected."
