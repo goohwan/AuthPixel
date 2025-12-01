@@ -1,121 +1,203 @@
 import numpy as np
 import cv2
-import pywt
 
 class WatermarkEmbedder:
     def __init__(self):
-        self.block_shape = (4, 4)
+        self.block_size = 8
+        self.Q = 35
+        self.SYNC_CODE = "111000111000" # 12 bits
 
     def embed(self, image, watermark_text):
-        # Convert to YCrCb and use Y channel
+        """
+        Embeds text into image using Redundant Block-based DCT with SYNC code.
+        """
         img_yuv = cv2.cvtColor(image, cv2.COLOR_RGB2YCrCb)
         h, w, _ = img_yuv.shape
-        
-        # Resize to be even for DWT
-        h_new = h if h % 2 == 0 else h - 1
-        w_new = w if w % 2 == 0 else w - 1
-        img_yuv = img_yuv[:h_new, :w_new]
-        
         y_channel = img_yuv[:, :, 0].astype(np.float32)
+
+        # Prepare Packet: [SYNC][LEN][MSG]
+        # LEN is 8 bits.
+        binary_msg = ''.join(format(ord(char), '08b') for char in watermark_text)
+        msg_len = len(binary_msg) // 8
+        binary_len = format(msg_len, '08b')
         
-        # 1. DWT (Level 1)
-        coeffs = pywt.dwt2(y_channel, 'haar')
-        cA, (cH, cV, cD) = coeffs
+        packet = self.SYNC_CODE + binary_len + binary_msg
+        packet_len = len(packet)
+
+        h_blocks = h // self.block_size
+        w_blocks = w // self.block_size
+        total_blocks = h_blocks * w_blocks
         
-        # 2. Embed into cH (Horizontal details) - simple strategy
-        # Convert text to binary string
-        binary_watermark = ''.join(format(ord(char), '08b') for char in watermark_text)
-        # Add termination signal (null character)
-        binary_watermark += '00000000'
+        if total_blocks < packet_len:
+            return None, "Image too small to hold this watermark text."
+
+        bit_idx = 0
         
-        watermark_len = len(binary_watermark)
-        
-        # Flatten cH for embedding
-        cH_flat = cH.flatten()
-        
-        if watermark_len > len(cH_flat):
-            raise ValueError("Text too long for this image.")
-            
-        # Embed bits
-        # Strategy: If bit is 1, make coeff positive/larger. If 0, make negative/smaller.
-        # This is a simplified QIM (Quantization Index Modulation) or similar logic.
-        # Here we use a very simple odd/even or sign based approach for demonstration stability.
-        # Better approach for DWT-DCT is usually modifying mid-band frequencies.
-        # Let's use a simpler LSB-like approach on DWT coefficients but with a strength factor.
-        
-        strength = 5
-        
-        for i in range(watermark_len):
-            bit = int(binary_watermark[i])
-            # Simple embedding: 
-            # If bit 1, ensure coeff > 0 + margin
-            # If bit 0, ensure coeff < 0 - margin
-            # This is robust enough for simple "invisible" requirement without attacks.
-            
-            if bit == 1:
-                if cH_flat[i] <= 0:
-                    cH_flat[i] = strength
-                else:
-                    cH_flat[i] += strength
-            else:
-                if cH_flat[i] >= 0:
-                    cH_flat[i] = -strength
-                else:
-                    cH_flat[i] -= strength
-                    
-        cH_embedded = cH_flat.reshape(cH.shape)
-        
-        # 3. Inverse DWT
-        coeffs_new = (cA, (cH_embedded, cV, cD))
-        y_embedded = pywt.idwt2(coeffs_new, 'haar')
-        
-        # Merge back
-        img_yuv[:, :, 0] = np.clip(y_embedded, 0, 255)
+        for r in range(h_blocks):
+            for c in range(w_blocks):
+                bit = int(packet[bit_idx % packet_len])
+                
+                r_start = r * self.block_size
+                c_start = c * self.block_size
+                block = y_channel[r_start:r_start+self.block_size, c_start:c_start+self.block_size]
+                
+                dct_block = cv2.dct(block)
+                coeff = dct_block[3, 3]
+                
+                step = self.Q
+                quantized = round(coeff / step)
+                
+                if bit == 0:
+                    if quantized % 2 != 0:
+                        quantized += 1 
+                else: 
+                    if quantized % 2 == 0:
+                        quantized += 1
+                
+                new_coeff = quantized * step
+                dct_block[3, 3] = new_coeff
+                
+                idct_block = cv2.idct(dct_block)
+                y_channel[r_start:r_start+self.block_size, c_start:c_start+self.block_size] = idct_block
+                
+                bit_idx += 1
+
+        img_yuv[:, :, 0] = np.clip(y_channel, 0, 255)
         img_rgb = cv2.cvtColor(img_yuv, cv2.COLOR_YCrCb2RGB)
         
-        return img_rgb
+        return img_rgb, None
 
 class WatermarkDecoder:
     def __init__(self):
-        pass
+        self.block_size = 8
+        self.Q = 35
+        self.SYNC_CODE = "111000111000"
 
     def decode(self, image):
         img_yuv = cv2.cvtColor(image, cv2.COLOR_RGB2YCrCb)
-        h, w, _ = img_yuv.shape
-        
-        # Resize to be even
-        h_new = h if h % 2 == 0 else h - 1
-        w_new = w if w % 2 == 0 else w - 1
-        img_yuv = img_yuv[:h_new, :w_new]
-        
         y_channel = img_yuv[:, :, 0].astype(np.float32)
+        h, w = y_channel.shape
         
-        # 1. DWT
-        coeffs = pywt.dwt2(y_channel, 'haar')
-        cA, (cH, cV, cD) = coeffs
+        # Group candidates by length
+        candidates_by_len = {}
         
-        cH_flat = cH.flatten()
-        
-        # Extract bits
-        binary_watermark = ""
-        for val in cH_flat:
-            if val > 0:
-                binary_watermark += "1"
-            else:
-                binary_watermark += "0"
+        # Grid Search
+        for offset_y in range(self.block_size):
+            for offset_x in range(self.block_size):
                 
-            # Check for null terminator every 8 bits
-            if len(binary_watermark) % 8 == 0:
-                if binary_watermark[-8:] == "00000000":
-                    binary_watermark = binary_watermark[:-8] # Remove terminator
-                    break
+                extracted_bits = []
+                h_blocks = (h - offset_y) // self.block_size
+                w_blocks = (w - offset_x) // self.block_size
+                
+                if h_blocks == 0 or w_blocks == 0:
+                    continue
+                    
+                for r in range(h_blocks):
+                    for c in range(w_blocks):
+                        r_start = offset_y + r * self.block_size
+                        c_start = offset_x + c * self.block_size
+                        
+                        block = y_channel[r_start:r_start+self.block_size, c_start:c_start+self.block_size]
+                        dct_block = cv2.dct(block)
+                        coeff = dct_block[3, 3]
+                        
+                        step = self.Q
+                        quantized = round(coeff / step)
+                        
+                        if quantized % 2 == 0:
+                            extracted_bits.append('0')
+                        else:
+                            extracted_bits.append('1')
+                
+                if not extracted_bits:
+                    continue
+                    
+                bit_stream = "".join(extracted_bits)
+                
+                # Find SYNC codes
+                import re
+                sync_indices = [m.start() for m in re.finditer(self.SYNC_CODE, bit_stream)]
+                
+                for idx in sync_indices:
+                    # Read Length (next 8 bits)
+                    len_start = idx + len(self.SYNC_CODE)
+                    if len_start + 8 > len(bit_stream):
+                        continue
+                        
+                    len_bits = bit_stream[len_start:len_start+8]
+                    try:
+                        msg_len = int(len_bits, 2)
+                    except:
+                        continue
+                        
+                    if msg_len <= 0 or msg_len > 50: # Sanity check
+                        continue
+                        
+                    # Read Message Bits
+                    msg_start = len_start + 8
+                    msg_end = msg_start + (msg_len * 8)
+                    
+                    if msg_end > len(bit_stream):
+                        continue
+                        
+                    msg_bits = bit_stream[msg_start:msg_end]
+                    
+                    if msg_len not in candidates_by_len:
+                        candidates_by_len[msg_len] = []
+                    candidates_by_len[msg_len].append(msg_bits)
+
+        # Vote
+        best_message = None
+        max_votes = 0
         
-        # Convert binary to text
-        try:
-            chars = []
-            for i in range(0, len(binary_watermark), 8):
-                byte = binary_watermark[i:i+8]
-                chars.append(chr(int(byte, 2)))
-            return "".join(chars)
-        except:
-            return None
+        for length, bit_strings in candidates_by_len.items():
+            # We need a reasonable number of votes to trust this length
+            # But even 1 might be enough if it's the only one.
+            
+            # Bit-wise vote
+            num_bits = length * 8
+            consensus_bits = []
+            
+            for i in range(num_bits):
+                ones = 0
+                zeros = 0
+                for s in bit_strings:
+                    if i < len(s):
+                        if s[i] == '1':
+                            ones += 1
+                        else:
+                            zeros += 1
+                
+                if ones > zeros:
+                    consensus_bits.append('1')
+                else:
+                    consensus_bits.append('0')
+            
+            consensus_str = "".join(consensus_bits)
+            
+            # Convert to text
+            try:
+                chars = []
+                is_valid = True
+                for k in range(0, len(consensus_str), 8):
+                    byte = consensus_str[k:k+8]
+                    char_code = int(byte, 2)
+                    if 32 <= char_code <= 126:
+                        chars.append(chr(char_code))
+                    else:
+                        is_valid = False
+                        break
+                
+                if is_valid:
+                    decoded_msg = "".join(chars)
+                    # Heuristic: Prefer result supported by more packets
+                    if len(bit_strings) > max_votes:
+                        max_votes = len(bit_strings)
+                        best_message = decoded_msg
+            except:
+                pass
+
+        if best_message:
+            return best_message, None
+        else:
+            return None, "No watermark detected."
