@@ -39,6 +39,7 @@ translations = {
         "header_protect": "Embed Invisible Watermark",
         "upload_protect": "Upload Image to Protect",
         "privacy_notice": "This service does not store any of your photos or information.",
+        "watermark_limitation": "⚠️ AuthPixel watermarks may be damaged by excessive editing.",
         "watermark_text_label": "Enter Watermark Text (Max 20 chars, English letters and numbers.)",
         "embed_button": "🔒 Embed Watermark",
         "warning_no_text": "Please enter watermark text.",
@@ -65,6 +66,7 @@ translations = {
         "header_protect": "보이지 않는 워터마크 삽입",
         "upload_protect": "보호할 이미지 업로드",
         "privacy_notice": "이 서비스는 고객님의 사진과 정보를 일체 저장하지 않습니다.",
+        "watermark_limitation": "⚠️ AuthPixel의 워터마크는 과도한 편집 시에는 훼손될 수 있습니다.",
         "watermark_text_label": "워터마크 텍스트 입력 (최대 20자, 영문+숫자만 입력해주세요)",
         "embed_button": "🔒 워터마크 삽입",
         "warning_no_text": "워터마크 텍스트를 입력해주세요.",
@@ -265,6 +267,7 @@ with tab1:
     
     uploaded_file = st.file_uploader(t["upload_protect"], type=['png', 'jpg', 'jpeg', 'bmp'], key="protect_upload")
     st.caption(t["privacy_notice"])
+    st.caption(t["watermark_limitation"])
     
     if uploaded_file:
         image = Image.open(uploaded_file)
@@ -303,6 +306,7 @@ with tab2:
     
     verify_file = st.file_uploader(t["upload_verify"], type=['png', 'jpg', 'jpeg', 'bmp'], key="verify_upload")
     st.caption(t["privacy_notice"])
+    st.caption(t["watermark_limitation"])
     
     if verify_file:
         verify_image = Image.open(verify_file)
