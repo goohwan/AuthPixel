@@ -1,6 +1,6 @@
 streamlit
 invisible-watermark
-opencv-python-headless
+
 numpy
 Pillow
 PyWavelets
